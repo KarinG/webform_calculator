@@ -116,10 +116,13 @@ function webform_calculator_replace_formula_values($formula_component, $webform_
   foreach ($components_from_formula as $component_key) {
     if (isset($components_by_key[$component_key])) {
       $component = $components_by_key[$component_key];
-      $values = $submission->data[$component['cid']];
+      $values = (empty($component['cid']) || empty($submission->data[$component['cid']]))
+        ? array() : $submission->data[$component['cid']];
       $sum = 0;
       foreach ($values as $value) {
-        $sum += $value;
+        if (!empty($value)) {
+          $sum += $value;
+        }
       }
       $formula = str_replace('{' . $component_key . '}', '(' . $sum . ')', $formula);
     }
@@ -178,3 +181,43 @@ function webform_calculator_form_builder_preview_alter(&$element, $form_type, $f
   }
 }
 
+/**
+ * Implements hook_form_alter().
+ */
+function webform_calculator_form_alter(&$form, &$form_state, $form_id) {
+
+  // Only interested in webforms.
+  if (empty($form_state['webform'])) {
+    return;
+  }
+  
+  // Only interested in webforms with formula components.
+  $has_formula = false;
+  foreach ($form_state['webform']['component_tree']['children'] as $cid => $component) {
+    if ($component['type'] == 'number') {
+      $has_formula = true;
+      break;
+    }
+  }
+  if (!$has_formula) {
+    return;
+  }
+
+  // Make submitted number values, which might be from previous pages, available
+  // to the js calculator.
+  if (!empty($form_state['storage']['submitted'])) {
+    $webform_calculator_data = array();
+    foreach ($form_state['webform']['component_tree']['children'] as $cid => $component) {
+      if ($component['type'] == 'number') {
+        $submitted_value = empty($form_state['storage']['submitted'][$cid]) ? 0 : $form_state['storage']['submitted'][$cid];
+        $webform_calculator_data[$component['form_key']] = $submitted_value;
+      }
+    }
+    $form['#attached']['js'][] = array(
+      'type' => 'setting',
+      'data' => array(
+        'webformCalculatorData' => $webform_calculator_data,
+      ),
+    );
+  }
+}

@@ -105,6 +105,13 @@
         componentValue = componentValue.length ? componentValue.reduce(function (a, b) {return a === null || b === null ? 0 : a + b;}, 0) : null;
       }
 
+      // Get value from previous page submission.
+      if (componentValue === null) {
+        if (typeof Drupal.settings.webformCalculatorData[componentKey] != null) {
+          componentValue = Drupal.settings.webformCalculatorData[componentKey]; 
+        }
+      }
+
       if (componentValue === null) {
         var label =  $('label[for$=-' + componentKey.replace(/_/g, '-') + ']').text().trim();
         if (label == '') {
