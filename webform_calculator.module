@@ -116,13 +116,10 @@ function webform_calculator_replace_formula_values($formula_component, $webform_
   foreach ($components_from_formula as $component_key) {
     if (isset($components_by_key[$component_key])) {
       $component = $components_by_key[$component_key];
-      $values = (empty($component['cid']) || empty($submission->data[$component['cid']]))
-        ? array() : $submission->data[$component['cid']];
+      $values = $submission->data[$component['cid']];
       $sum = 0;
       foreach ($values as $value) {
-        if (!empty($value)) {
-          $sum += $value;
-        }
+        $sum += $value;
       }
       $formula = str_replace('{' . $component_key . '}', '(' . $sum . ')', $formula);
     }
@@ -194,7 +191,7 @@ function webform_calculator_form_alter(&$form, &$form_state, $form_id) {
   // Only interested in webforms with formula components.
   $has_formula = false;
   foreach ($form_state['webform']['component_tree']['children'] as $cid => $component) {
-    if ($component['type'] == 'number') {
+    if ($component['type'] == 'formula') {
       $has_formula = true;
       break;
     }
