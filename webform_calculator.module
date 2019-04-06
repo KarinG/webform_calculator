@@ -39,6 +39,62 @@ function webform_calculator_webform_submission_presave($node, &$submission) {
 }
 
 /**
+ * Called after a webform is submitted
+ * Or, for a multipage form, called after each page
+ * @param array $form
+ * @param array $form_state (reference)
+ */
+function webform_calculator_form_alter(&$form, &$form_state, $form_id) {
+  $form['#validate'][] = 'replace_formula_values';
+}
+
+function replace_formula_values($form, &$form_state) {
+  // Go through each Webform Component to check if it's of type Formula and if so calculate it's value.
+  // Logic is identical to what's already in use by webform_calculator_replace_formula_values on webform_submission_presave.
+  // Doing this in a validate means the Calculated Value will be available to modules like Webform CiviCRM before the Submission is saved.
+  foreach ($form_state['webform']['component_tree']['children'] as $formula_component) {
+    if ($formula_component['type'] == 'formula') {
+      $formula = $formula_component['value'];
+      $components_from_formula = webform_calculator_get_components_from_formula($formula);
+      $components_by_key = array();
+
+      foreach ($form_state['webform']['component_tree']['children'] as $component) {
+        $components_by_key[$component['form_key']] = $component;
+      }
+
+      foreach ($components_from_formula as $component_key) {
+        if (isset($components_by_key[$component_key])) {
+          $values = array();
+          // Look on the same page first:
+          // if ($formula_component['page_num'] == $form_state['values']['details']['page_num']) {
+          if (array_key_exists($component_key, $form_state['values']['submitted'])) {
+            $values[] = $form_state['values']['submitted'][$component_key];
+          }
+          else {
+            // Look in storage (previous pages):
+            $values[] = $form_state['storage']['submitted'][$components_by_key[$component_key]['cid']];
+          }
+          $sum = 0;
+          foreach ($values as $value) {
+            $sum += $value;
+          }
+          $formula = str_replace('{' . $component_key . '}', '(' . $sum . ')', $formula);
+        }
+      }
+
+      try  {
+        return $form_state['values']['submitted'][$formula_component['form_key']] = webform_calculator_eval($formula, $formula_component['extra']['precision']);
+      }
+      catch (Exception $e) {
+        watchdog_exception('webform_calculator', $e);
+        return 0;
+      }
+    }
+  }
+}
+
+
+/**
  * Evaluate math formula and format result.
  *
  * @param $formula
