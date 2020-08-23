@@ -13,5 +13,5 @@ Usage
 Available operators:
 +, -, *, /, (, ), %
 
-Important: for best results do NOT nest within a layout_box or fieldset!
+Important: for best results do NOT nest a formula field within a layout_box or fieldset!
 
