@@ -12,3 +12,6 @@ Usage
 -----
 Available operators:
 +, -, *, /, (, ), %
+
+Important: for best results do NOT nest within a layout_box or fieldset!
+
