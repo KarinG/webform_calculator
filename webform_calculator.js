@@ -16,7 +16,7 @@
   // Round and format number according to display preferences
   function formatNumber(number, places, sep, point) {
     var multiplier = Math.pow(10, places),
-      result = (Math.round(number * multiplier) / multiplier).toString();
+      result = (Math.round(number * multiplier) / multiplier).toFixed(2);
     if (point && point !== '.') {
       result = result.replace('.', point);
     }
